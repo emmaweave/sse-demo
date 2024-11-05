@@ -5,10 +5,12 @@ const ProgressComponent = () => {
     const [isCompleted, setIsCompleted] = useState(false);
     const [assetID, setAssetID] = useState(null);
 
+    const env = "https://sse-demo123-93594a7d6504.herokuapp.com/"
+
     // Function to start asset generation
     const startGeneration = async () => {
         try {
-            const response = await fetch('http://localhost:8080/start');
+            const response = await fetch(`${env}/generate`);
             const data = await response.json();
             setAssetID(data.assetID); // Set the assetID received from the backend
             setProgress(0);
@@ -22,7 +24,7 @@ const ProgressComponent = () => {
         if (!assetID) return;
 
         // Connect to the SSE endpoint with the generated assetID
-        const eventSource = new EventSource(`http://localhost:8080/sse?assetID=${assetID}`);
+        const eventSource = new EventSource(`${env}/sse?assetID=${assetID}`);
 
         eventSource.onmessage = (event) => {
             const data = JSON.parse(event.data);

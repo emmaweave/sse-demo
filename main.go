@@ -6,6 +6,7 @@ import (
 	"log"
 	"math/rand"
 	"net/http"
+	"os"
 	"strconv"
 	"time"
 )
@@ -68,9 +69,14 @@ func SSEHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func main() {
-	http.HandleFunc("/start", StartHandler) // Endpoint to start generation
-	http.HandleFunc("/sse", SSEHandler)     // SSE endpoint
+	http.HandleFunc("/generate", StartHandler) // Endpoint to start generation
+	http.HandleFunc("/sse", SSEHandler)        // SSE endpoint
 
-	fmt.Println("Server running on http://localhost:8080")
-	log.Fatal(http.ListenAndServe(":8080", nil))
+	port := os.Getenv("PORT")
+	if port == "" {
+		port = "8080" // Default port for local testing
+	}
+
+	log.Printf("Starting server on port %s", port)
+	log.Fatal(http.ListenAndServe(":"+port, nil))
 }
