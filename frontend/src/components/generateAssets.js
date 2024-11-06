@@ -50,13 +50,15 @@ const ProgressComponent = () => {
 
     return (
         <div>
-            <h1>Asset Generation Progress</h1>
+            <h1>Assets</h1>
             <button onClick={startGeneration} disabled={progress > 0 && !isCompleted}>
                 {progress > 0 && !isCompleted ? 'Generating...' : 'Start Generation'}
             </button>
+            <div htmlFor="progress-bar">Asset ID: {assetID}</div>
 
             {assetID && (
                 <div>
+
                     <label htmlFor="progress-bar">Progress:</label>
                     <progress id="progress-bar" value={progress} max="100" />
                     <span>{isCompleted ? 'Completed' : `${progress}%`}</span>
