@@ -1,69 +1,84 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState } from "react";
 
 const ProgressComponent = () => {
-    const [progress, setProgress] = useState(0);
-    const [isCompleted, setIsCompleted] = useState(false);
-    const [assetID, setAssetID] = useState(null);
+  const [progress, setProgress] = useState(0);
+  const [isCompleted, setIsCompleted] = useState(false);
+  const [projectID, setProjectID] = useState(null);
 
-    const env = "https://sse-demo123-93594a7d6504.herokuapp.com/"
+  let env = "http://localhost:8080";
+   env = "https://sse-backend-6d237bcbc6f3.herokuapp.com/";
 
-    // Function to start asset generation
-    const startGeneration = async () => {
-        try {
-            const response = await fetch(`${env}/generate`);
-            const data = await response.json();
-            setAssetID(data.assetID); // Set the assetID received from the backend
-            setProgress(0);
-            setIsCompleted(false);
-        } catch (error) {
-            console.error('Error starting generation:', error);
+
+  const startGeneration = async () => {
+    try {
+      const response = await fetch(`${env}/generate-assets`);
+      const data = await response.json();
+      setProjectID(data.projectID);
+      setProgress(0);
+      setIsCompleted(false); 
+    } catch (error) {
+      console.error("Error starting generation:", error);
+    }
+  };
+
+  const downloadAssets = async () => {
+
+  };
+
+  useEffect(() => {
+    if (!projectID) return;
+
+    const eventSource = new EventSource(
+      `${env}/progress-assets?projectID=${projectID}`
+    );
+
+    eventSource.onmessage = (event) => {
+      try {
+        const data = JSON.parse(event.data);
+        if (data.progress >= 100) {
+          setProgress(100);
+          setIsCompleted(true);
+          eventSource.close(); 
+        } else {
+          setProgress(data.progress);
         }
+      } catch (error) {
+        console.error("Error parsing SSE data:", error);
+      }
     };
 
-    useEffect(() => {
-        if (!assetID) return;
+    eventSource.onerror = () => {
+      console.error("SSE connection error");
+      eventSource.close();
+    };
 
-        // Connect to the SSE endpoint with the generated assetID
-        const eventSource = new EventSource(`${env}/sse?assetID=${assetID}`);
+    return () => {
+      eventSource.close();
+    };
+  }, [projectID, env]);
 
-        eventSource.onmessage = (event) => {
-            const data = JSON.parse(event.data);
+  return (
+    <div>
+      <h1>Asset Generation Progress</h1>
+      <button onClick={startGeneration} disabled={progress > 0 && !isCompleted}>
+        {progress > 0 && !isCompleted ? "Generating..." : "Start Generation"}
+      </button>
 
-            if (data.progress === 'completed') {
-                setProgress(100);
-                setIsCompleted(true);
-                eventSource.close(); // Close the connection when completed
-            } else {
-                setProgress(data.progress);
-            }
-        };
-
-        eventSource.onerror = () => {
-            console.error('SSE connection error');
-            eventSource.close();
-        };
-
-        return () => {
-            eventSource.close();
-        };
-    }, [assetID]);
-
-    return (
+      {projectID && (
         <div>
-            <h1>Asset Generation Progress</h1>
-            <button onClick={startGeneration} disabled={progress > 0 && !isCompleted}>
-                {progress > 0 && !isCompleted ? 'Generating...' : 'Start Generation'}
-            </button>
+          <label htmlFor="progress-bar">Progress:</label>
+          <progress id="progress-bar" value={progress} max="100" />
+          <span>{isCompleted ? "Completed" : `${progress}%`}</span>
 
-            {assetID && (
-                <div>
-                    <label htmlFor="progress-bar">Progress:</label>
-                    <progress id="progress-bar" value={progress} max="100" />
-                    <span>{isCompleted ? 'Completed' : `${progress}%`}</span>
-                </div>
-            )}
+          {isCompleted && (
+            <div>
+              <button onClick={downloadAssets}>DOWNLOAD ASSETS</button>
+            </div>
+          )}
         </div>
-    );
+      )}
+    </div>
+  );
 };
 
 export default ProgressComponent;
